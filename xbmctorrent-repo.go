@@ -195,8 +195,7 @@ func XBMCRepoMuxer(repos []string) *mux.Router {
     router.HandleFunc("/{addon_id}/{file}.zip", func(w http.ResponseWriter, r *http.Request) {
         vars := mux.Vars(r)
         addon := addons[vars["addon_id"]]
-        os, arch := identifyPlatform(r.UserAgent())
-        file := fmt.Sprintf("%s.%s_%s.zip", vars["file"], os, arch)
+        file := fmt.Sprintf("%s.zip", vars["file"])
         http.Redirect(w, r, addon.Releases[0].AssetDownloadURL(file), 302)
     })
 
