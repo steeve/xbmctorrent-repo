@@ -176,7 +176,7 @@ func XBMCRepoMuxer(repos []string) *mux.Router {
         vars := mux.Vars(r)
         addon := addons[vars["addon_id"]]
         for _, release := range addon.Releases {
-            fmt.Fprintf(w, release.Body)
+            fmt.Fprintf(w, "%s\n-------\n%s\n\n", release.Name, release.Body)
         }
     })
 
