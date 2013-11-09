@@ -143,12 +143,13 @@ func XBMCRepoMuxer(repos []string) *mux.Router {
     addons = reloadAddons(repos)
 
     router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-        os, arch := identifyPlatform(r.UserAgent())
-        fmt.Println(os)
-        fmt.Println(arch)
         files := []string{}
         for _, addon := range addons {
-            files = append(files, fmt.Sprintf("%s/", addon.Id))
+            for _, asset := range addon.Releases[0].Assets {
+                if strings.HasSuffix(asset.Name, ".zip") {
+                    files = append(files, asset.Name)
+                }
+            }
         }
         IndexTemplate.Execute(w, files)
     })
@@ -171,25 +172,24 @@ func XBMCRepoMuxer(repos []string) *mux.Router {
         fmt.Fprintf(w, "%x", h.Sum(nil))
     })
 
-    router.HandleFunc("/{addon_id}/", func(w http.ResponseWriter, r *http.Request) {
-        vars := mux.Vars(r)
-        addon := addons[vars["addon_id"]]
-
-        files := []string{}
-        for _, asset := range addon.Releases[0].Assets {
-            files = append(files, asset.Name)
-        }
-        IndexTemplate.Execute(w, files)
-    })
-
     router.HandleFunc("/{addon_id}/changelog-{version}.txt", func(w http.ResponseWriter, r *http.Request) {
         vars := mux.Vars(r)
         addon := addons[vars["addon_id"]]
         for _, release := range addon.Releases {
-            if vars["version"] == release.TagName[1:] {
-                fmt.Fprintf(w, release.Body)
-            }
+            fmt.Fprintf(w, release.Body)
         }
+    })
+
+    router.HandleFunc("/{addon_id}/fanart.jpg", func(w http.ResponseWriter, r *http.Request) {
+        vars := mux.Vars(r)
+        addon := addons[vars["addon_id"]]
+        http.Redirect(w, r, addon.Releases[0].AssetDownloadURL("fanart.jpg"), 302)
+    })
+
+    router.HandleFunc("/{addon_id}/icon.png", func(w http.ResponseWriter, r *http.Request) {
+        vars := mux.Vars(r)
+        addon := addons[vars["addon_id"]]
+        http.Redirect(w, r, addon.Releases[0].AssetDownloadURL("icon.png"), 302)
     })
 
     router.HandleFunc("/{addon_id}/{file}.zip", func(w http.ResponseWriter, r *http.Request) {
@@ -198,12 +198,6 @@ func XBMCRepoMuxer(repos []string) *mux.Router {
         os, arch := identifyPlatform(r.UserAgent())
         file := fmt.Sprintf("%s.%s_%s.zip", vars["file"], os, arch)
         http.Redirect(w, r, addon.Releases[0].AssetDownloadURL(file), 302)
-    })
-
-    router.HandleFunc("/{addon_id}/{file}", func(w http.ResponseWriter, r *http.Request) {
-        vars := mux.Vars(r)
-        addon := addons[vars["addon_id"]]
-        http.Redirect(w, r, addon.Releases[0].AssetDownloadURL(vars["file"]), 302)
     })
 
     router.HandleFunc("/reload", func(w http.ResponseWriter, r *http.Request) {
