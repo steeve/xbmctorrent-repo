@@ -92,7 +92,7 @@ type XBMCAddon struct {
 
 func (r Release) AssetDownloadURL(filename string) string {
     parts := strings.SplitAfter(r.HTMLURL, "/")
-    ghUrl := strings.Join(parts[:len(parts) - 1], "")
+    ghUrl := strings.Join(parts[:len(parts) - 2], "")
     return fmt.Sprintf("%sdownload/%s/%s", ghUrl, r.TagName, filename)
 }
 
